@@ -1,0 +1,2 @@
+# Early-Identification-of-High-Risk-Mental-Health-Profiles-Using-an-ITLEL-Model
+Mental health disorders are a growing global concern affecting people across different age groups &amp; social backgrounds. Early identification of high-risk individuals is essential for timely support. This project proposes an ITLEL model that uses machine learning to analyze behavioral and psychological factors for early mental health risk detection.
