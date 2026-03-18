@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project-specific
+*.pkl
+*.pt
+processed_dataset.csv
+explanation_result.json
+PHQ9_Student_Depression_Dataset_Updated.xlsx
