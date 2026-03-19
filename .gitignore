@@ -212,3 +212,9 @@ __marimo__/
 processed_dataset.csv
 explanation_result.json
 PHQ9_Student_Depression_Dataset_Updated.xlsx
+
+# Node / React Frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
