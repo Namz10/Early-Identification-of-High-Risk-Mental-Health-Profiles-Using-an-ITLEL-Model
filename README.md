@@ -28,15 +28,53 @@ Patient Input → Feature Processing → Triple-Layer Ensemble → Explainabilit
 | 2 | `train_ensemble.py` | Trains the triple-layer ensemble, saves models |
 | 3 | `explain.py` | SHAP + LIME explainability, risk classification |
 
-## Setup
+## Setup & Local Development
 
+This project contains a Machine Learning backend (FastAPI) and a modern Web UI (React + Vite).
+
+### 1. Backend Setup
+Requires Python 3.9+.
 ```bash
-pip install pandas textblob openpyxl xgboost scikit-learn torch shap lime joblib
+cd backend
+python -m venv .venv
+
+# Activate virtual environment
+# Windows: .\.venv\Scripts\activate
+# Mac/Linux: source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+### 2. Frontend Setup
+Requires Node.js.
+```bash
+cd web-ui
+npm install
 ```
 
 ## Usage
 
+### Run the Web Application
+Open two separate terminals:
+
+**Terminal 1 (Backend - FastAPI):**
 ```bash
+cd backend
+# Make sure .venv is activated!
+python -m uvicorn main:app --reload --port 8000
+```
+
+**Terminal 2 (Frontend - React):**
+```bash
+cd web-ui
+npm run dev
+```
+Then navigate to `http://localhost:5173/` in your browser.
+
+### Train the Model (Optional)
+If you want to re-train the ensemble model from scratch:
+```bash
+cd backend
 python preprocess.py
 python train_ensemble.py
 python explain.py
