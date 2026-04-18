@@ -24,10 +24,11 @@ class PatientMeta(Base):
     __tablename__ = "patients_meta"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    date_of_birth = Column(DateTime)
-    gender = Column(String)
-    contact_number = Column(String)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String, nullable=False)
+    date_of_birth = Column(DateTime, nullable=True)
+    gender = Column(String, nullable=True)
+    contact_number = Column(String, nullable=True)
 
     user = relationship("User", back_populates="profile")
     assessments = relationship("Assessment", back_populates="patient")

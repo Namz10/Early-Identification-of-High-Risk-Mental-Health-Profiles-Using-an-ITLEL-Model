@@ -4,6 +4,7 @@ let serviceErrorBannerShown = false;
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8001',
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
@@ -22,9 +23,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response) {
       if (error.response.status === 401) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        window.location.href = '/';
+        // Do not redirect here to avoid infinite loops during auth initialization.
+        // ProtectedRoute and AuthContext handle navigation.
       } else if (error.response.status === 403) {
         // Dispatch custom event for toast
         window.dispatchEvent(new CustomEvent('api:forbidden', {

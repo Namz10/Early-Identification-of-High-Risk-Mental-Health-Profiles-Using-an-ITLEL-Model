@@ -15,16 +15,23 @@ def submit_assessment(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_role(UserRole.PATIENT))
 ):
-    # Ensure patient meta exists
-    patient = db.query(PatientMeta).filter(PatientMeta.user_id == current_user.id).first()
+    # Ensure patient profile exists for this name under the current user
+    patient = db.query(PatientMeta).filter(
+        PatientMeta.user_id == current_user.id,
+        PatientMeta.name == assessment_in.patient_name
+    ).first()
+    
     if not patient:
-        # Auto-create patient meta if missing
-        patient = PatientMeta(user_id=current_user.id)
+        # Create new patient sub-profile if missing
+        patient = PatientMeta(
+            user_id=current_user.id, 
+            name=assessment_in.patient_name
+        )
         db.add(patient)
         db.commit()
         db.refresh(patient)
 
-    # Run ML Inference
+    # Run LEGIT ML Inference
     results = run_inference(assessment_in.responses)
     
     # Create Assessment record

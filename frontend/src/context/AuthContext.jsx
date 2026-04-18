@@ -1,53 +1,22 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { jwtDecode } from 'jwt-decode';
+import React, { createContext, useState, useContext } from 'react';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState({
-    token: localStorage.getItem('token'),
-    user: null,
+    user: localStorage.getItem('user'),
     role: localStorage.getItem('role'),
-    loading: true,
+    loading: false,
   });
 
-  useEffect(() => {
-    const initializeAuth = () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const decoded = jwtDecode(token);
-          const currentTime = Date.now() / 1000;
-          
-          if (decoded.exp < currentTime) {
-            logout();
-          } else {
-            setAuth({
-              token,
-              user: decoded.sub,
-              role: decoded.role,
-              loading: false,
-            });
-          }
-        } catch (error) {
-          logout();
-        }
-      } else {
-        setAuth(prev => ({ ...prev, loading: false }));
-      }
-    };
-
-    initializeAuth();
-  }, []);
-
-  const login = (token, role) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('role', role);
-    const decoded = jwtDecode(token);
+  const login = (userData) => {
+    localStorage.setItem('token', userData.access_token);
+    localStorage.setItem('role', userData.role);
+    localStorage.setItem('user', userData.full_name || userData.email);
+    
     setAuth({
-      token,
-      user: decoded.sub,
-      role: role,
+      user: userData.full_name || userData.email,
+      role: userData.role,
       loading: false,
     });
   };
@@ -55,12 +24,13 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
+    localStorage.removeItem('user');
     setAuth({
-      token: null,
       user: null,
       role: null,
       loading: false,
     });
+    window.location.href = '/';
   };
 
   return (

@@ -10,6 +10,9 @@ from .schemas import TokenData
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
+from fastapi import Cookie, Request
+
+# oauth2_scheme is kept for OpenAPI docs but won't be the primary source
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def verify_password(plain_password, hashed_password):
@@ -40,10 +43,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         role: str = payload.get("role")
         if user_id is None:
             raise credentials_exception
-        token_data = TokenData(user_id=user_id, role=role)
-    except JWTError:
+        token_data = TokenData(user_id=int(user_id), role=role)
+    except (JWTError, ValueError):
         raise credentials_exception
-    
     user = db.query(User).filter(User.id == token_data.user_id).first()
     if user is None:
         raise credentials_exception

@@ -19,6 +19,15 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    message: str
+    role: str
+    email: str
+    full_name: str
+
+class UserAuthResponse(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: str
     role: str
 
 class TokenData(BaseModel):
@@ -27,6 +36,7 @@ class TokenData(BaseModel):
 
 # Assessment Schemas
 class AssessmentSubmit(BaseModel):
+    patient_name: str
     responses: List[int] = Field(..., min_items=9, max_items=9)
 
 class AssessmentResponse(BaseModel):
@@ -46,8 +56,8 @@ class AssessmentDetail(BaseModel):
 # Patient Schemas
 class PatientProfile(BaseModel):
     id: int
-    full_name: str
-    email: EmailStr
+    name: str # CHANGED
+    email: Optional[EmailStr] # Changed from required to optional as sub-patients might not have emails
     date_of_birth: Optional[datetime]
     gender: Optional[str]
     contact_number: Optional[str]
@@ -56,8 +66,10 @@ class PatientListItem(BaseModel):
     id: int
     name: str
     last_assessment_date: Optional[datetime]
+    phq9_score: Optional[int]
     risk_level: Optional[str]
     confidence_score: Optional[float]
+    latest_assessment_id: Optional[int]
 
 # Report Schemas
 class ShapNarrativeRequest(BaseModel):

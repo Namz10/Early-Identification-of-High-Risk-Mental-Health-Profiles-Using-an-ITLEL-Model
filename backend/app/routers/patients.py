@@ -15,22 +15,22 @@ def list_patients(
     current_user: User = Depends(require_role(UserRole.CLINICIAN))
 ):
     # Retrieve patients with their latest assessment data
-    # Subquery for latest assessment date per patient
     latest_sub = db.query(
         Assessment.patient_id,
         func.max(Assessment.submitted_at).label("latest_date")
     ).group_by(Assessment.patient_id).subquery()
 
-    # Join patients with users and their latest assessment
-    # This is a bit complex for a simple scaffold, so I'll do a join
+    # Join patients with their latest assessment
+    # We now use PatientMeta.name directly and include score/id fields
     patients = db.query(
         PatientMeta.id,
-        User.full_name.label("name"),
+        PatientMeta.name,
         latest_sub.c.latest_date,
+        Assessment.raw_score,
         Assessment.risk_level,
-        Assessment.confidence_score
-    ).join(User, PatientMeta.user_id == User.id)\
-     .outerjoin(latest_sub, PatientMeta.id == latest_sub.c.patient_id)\
+        Assessment.confidence_score,
+        Assessment.id.label("assessment_id")
+    ).outerjoin(latest_sub, PatientMeta.id == latest_sub.c.patient_id)\
      .outerjoin(Assessment, (PatientMeta.id == Assessment.patient_id) & (Assessment.submitted_at == latest_sub.c.latest_date))\
      .all()
 
@@ -39,8 +39,10 @@ def list_patients(
             "id": p.id,
             "name": p.name,
             "last_assessment_date": p.latest_date,
-            "risk_level": p.risk_level,
-            "confidence_score": p.confidence_score
+            "phq9_score": p.raw_score,
+            "risk_level": p.risk_level or "N/A",
+            "confidence_score": p.confidence_score or 0.0,
+            "latest_assessment_id": p.assessment_id
         } for p in patients
     ]
 
@@ -56,8 +58,8 @@ def get_patient_profile(
     
     return {
         "id": patient.id,
-        "full_name": patient.user.full_name,
-        "email": patient.user.email,
+        "name": patient.name,
+        "email": patient.user.email if patient.user else None,
         "date_of_birth": patient.date_of_birth,
         "gender": patient.gender,
         "contact_number": patient.contact_number

@@ -18,17 +18,17 @@ const LoginModal = ({ role, onClose }) => {
 
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { access_token, role: userRole } = response.data;
+      const userData = response.data;
 
-      if (userRole !== role) {
+      if (userData.role !== role) {
         setError(`Access denied: This login is for ${role}s only.`);
         setLoading(false);
         return;
       }
 
-      login(access_token, userRole);
+      login(userData);
       
-      if (userRole === 'patient') {
+      if (userData.role === 'patient') {
         navigate('/assessment');
       } else {
         navigate('/dashboard');
