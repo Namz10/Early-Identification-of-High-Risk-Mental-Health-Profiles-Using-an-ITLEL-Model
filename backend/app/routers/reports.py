@@ -97,73 +97,115 @@ def generate_pdf_report(
     if not assessment:
         raise HTTPException(status_code=404, detail="Assessment not found")
     
+    patient = assessment.patient
     report = db.query(Report).filter(Report.assessment_id == assessment_id).first()
+    
+    # Ensure report narratives exist
     if not report or not report.shap_narrative or not report.llm_recommendation:
-        # Trigger generation if missing (internal calls)
-        # Note: In a real app we'd use service functions, here we just replicate or call the logic
         if not report:
             report = Report(assessment_id=assessment_id)
             db.add(report)
-            db.commit()
-            db.refresh(report)
         
-        # Trigger Narrative
+        # Sync narratives if missing
         shap_values = assessment.shap_values
         sorted_features = sorted(shap_values.items(), key=lambda x: abs(x[1]), reverse=True)
         top_3 = sorted_features[:3]
-        narrative = f"The primary contributors to the {assessment.risk_level.lower()} risk classification were: " + ", ".join([f"{f.replace('_', ' ')} ({v:+.2f})" for f, v in top_3]) + "."
-        report.shap_narrative = narrative
+        report.shap_narrative = f"Primary contributors to the {assessment.risk_level.lower()} risk were: " + ", ".join([f"{f.replace('_', ' ')} ({v:+.2f})" for f, v in top_3]) + "."
         
-        # Trigger LLM
         report.llm_recommendation = (
-            f"Clinical Interpretation: {assessment.risk_level} depression risk detected. Score: {assessment.raw_score}. "
-            "Follow-up: Immediate clinical review advised."
+            f"Note: Potential {assessment.risk_level} depression risk detected (PHQ-9: {assessment.raw_score}). "
+            "Suggest immediate clinical follow-up and diagnostic verification."
         )
         db.commit()
         db.refresh(report)
 
-    # PDF Generation
+    # PDF Generation Setup
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=letter,
+        rightMargin=50, leftMargin=50, topMargin=50, bottomMargin=50
+    )
     styles = getSampleStyleSheet()
+    
+    # Custom styles
+    styles['Normal'].fontSize = 10
+    styles['Normal'].leading = 14
+    
     elements = []
 
-    # Header
-    elements.append(Paragraph("<b>Clinical Decision Support System - Assessment Report</b>", styles['Title']))
-    elements.append(Paragraph(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}", styles['Normal']))
-    elements.append(Spacer(1, 12))
+    # 1. Header (Banner)
+    elements.append(Paragraph("<b>MINDSCREEN</b> | Clinical Assessment Report", styles['Title']))
+    elements.append(Paragraph(f"Reference ID: MSC-{assessment_id}-RT", styles['Normal']))
+    elements.append(Spacer(1, 20))
 
-    # Patient/Assessment Metadata
-    data = [
-        ["Patient ID", f"P-{assessment.patient_id}"],
-        ["Assessment Date", assessment.submitted_at.strftime('%Y-%m-%d %H:%M')],
-        ["PHQ-9 Raw Score", str(assessment.raw_score)],
-        ["Risk Classification", assessment.risk_level],
-        ["Confidence Score", f"{assessment.confidence_score:.2f}"]
+    # 2. Patient Bio Section
+    elements.append(Paragraph("<b>I. Patient Information</b>", styles['Heading3']))
+    bio_data = [
+        ["Full Name:", patient.name, "Assessment Date:", assessment.submitted_at.strftime('%Y-%m-%d')],
+        ["Date of Birth:", patient.date_of_birth or "Unavailable", "Classification:", assessment.risk_level]
     ]
-    t = Table(data)
-    t.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('PADDING', (0, 0), (-1, -1), 6)
+    bio_table = Table(bio_data, colWidths=[100, 150, 100, 150])
+    bio_table.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica'),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('TEXTCOLOR', (0,0), (0,-1), colors.grey),
+        ('TEXTCOLOR', (2,0), (2,-1), colors.grey),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+        ('LINEBELOW', (0,0), (-1, -1), 0.5, colors.lightgrey),
     ]))
-    elements.append(t)
-    elements.append(Spacer(1, 12))
+    elements.append(bio_table)
+    elements.append(Spacer(1, 20))
 
-    # SHAP Narrative
-    elements.append(Paragraph("<b>Explainability (SHAP Metrics)</b>", styles['Heading2']))
+    # 3. PHQ-9 Item Record
+    elements.append(Paragraph("<b>II. PHQ-9 Itemized Responses</b>", styles['Heading3']))
+    
+    # Item labels (Simplified from phq9.js)
+    questions = [
+        "Little interest or pleasure", "Feeling down/depressed", "Sleep issues",
+        "Feeling tired/little energy", "Appetite changes", "Feeling bad about self",
+        "Trouble concentrating", "Moving/speaking slow/fast", "Thoughts of self-harm"
+    ]
+    phq_data = [["#", "Clinical Parameter / Response Domain", "Score"]]
+    for i, score in enumerate(assessment.phq9_responses):
+        phq_data.append([str(i+1), questions[i], str(score)])
+    
+    phq_data.append(["", "<b>AGGREGATE CLINICAL SCORE</b>", f"<b>{assessment.raw_score} / 27</b>"])
+    
+    phq_table = Table(phq_data, colWidths=[30, 420, 50])
+    phq_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.whitesmoke),
+        ('GRID', (0,0), (-1,-2), 0.5, colors.lightgrey),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTSIZE', (0,0), (-1,-1), 9),
+        ('TOPPADDING', (0,0), (-1,-1), 6),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ('ALIGN', (2,0), (2,-1), 'CENTER'),
+        ('BACKGROUND', (0,-1), (-1,-1), colors.lightgrey), # Total row
+    ]))
+    elements.append(phq_table)
+    elements.append(Spacer(1, 20))
+
+    # 4. Diagnostics & Explainability
+    elements.append(Paragraph("<b>III. Diagnostics & Explainability (SHAP Value Attribution)</b>", styles['Heading3']))
     elements.append(Paragraph(report.shap_narrative, styles['Normal']))
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 10))
+    
+    # Confidence Badge
+    elements.append(Paragraph(f"<b>Model Confidence:</b> {assessment.confidence_score*100:.1f}%", styles['Normal']))
+    elements.append(Spacer(1, 20))
 
-    # LLM Recommendations
-    elements.append(Paragraph("<b>Clinical Recommendations</b>", styles['Heading2']))
+    # 5. Clinical Recommendations
+    elements.append(Paragraph("<b>IV. Clinician Recommendations (AI-Assisted)</b>", styles['Heading3']))
     elements.append(Paragraph(report.llm_recommendation, styles['Normal']))
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 30))
 
-    # Footer
-    elements.append(Paragraph("<i>Disclaimer: This report is generated by an AI-assisted decision-support system. It should be reviewed by a qualified clinician before any diagnostic or treatment decisions are made.</i>", styles['Italic']))
+    # Disclaimer
+    elements.append(Paragraph("<b>Disclaimer:</b> This report is generated by an ITLEL Ensemble ML system. It is intended for use by medical professionals only. All diagnostic conclusions must be verified by a licensed clinician.", styles['Normal']))
 
     doc.build(elements)
     
     buffer.seek(0)
-    return Response(content=buffer.getvalue(), media_type="application/pdf")
+    response = Response(content=buffer.getvalue(), media_type="application/pdf")
+    response.headers["Content-Disposition"] = f"attachment; filename=MindScreen_Report_{assessment_id}.pdf"
+    return response

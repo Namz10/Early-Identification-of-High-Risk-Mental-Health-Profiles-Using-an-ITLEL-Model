@@ -6,6 +6,7 @@ import api from '../services/api';
 const AssessmentFlow = () => {
   const [currentStep, setCurrentStep] = useState(-1); // Start at -1 for the name step
   const [patientName, setPatientName] = useState('');
+  const [dob, setDob] = useState('');
   const [responses, setResponses] = useState(Array(9).fill(null));
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ const AssessmentFlow = () => {
     try {
       const response = await api.post('/assessments/submit', { 
         patient_name: patientName,
+        date_of_birth: dob,
         responses 
       });
       const { assessment_id } = response.data;
@@ -83,7 +85,7 @@ const AssessmentFlow = () => {
               Welcome to MindScreen. <br/>
               <span className="text-slate-400">Who are we assessing today?</span>
             </h2>
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
                   Patient's Full Name
@@ -97,8 +99,22 @@ const AssessmentFlow = () => {
                   autoFocus
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-widest mb-2">
+                  Date of Birth (Optional)
+                </label>
+                <input 
+                  type="text"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  placeholder="e.g. 15th Aug 1995"
+                  className="w-full border-b-2 border-slate-100 py-2 text-xl font-light focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+
               <p className="text-slate-400 text-sm italic">
-                This name will be used to identify the assessment in the clinician dashboard.
+                This information will be used to identify the assessment in the clinician dashboard and report.
               </p>
             </div>
           </div>

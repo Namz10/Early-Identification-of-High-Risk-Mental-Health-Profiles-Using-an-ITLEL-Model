@@ -25,11 +25,18 @@ def submit_assessment(
         # Create new patient sub-profile if missing
         patient = PatientMeta(
             user_id=current_user.id, 
-            name=assessment_in.patient_name
+            name=assessment_in.patient_name,
+            # We don't have a strict date format yet, so we store as provided or parse
+            date_of_birth=assessment_in.date_of_birth
         )
         db.add(patient)
-        db.commit()
-        db.refresh(patient)
+    else:
+        # Update DOB if provided
+        if assessment_in.date_of_birth:
+            patient.date_of_birth = assessment_in.date_of_birth
+    
+    db.commit()
+    db.refresh(patient)
 
     # Run LEGIT ML Inference
     results = run_inference(assessment_in.responses)

@@ -65,7 +65,7 @@ const ReportView = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      const fileName = `MSC_Report_${data.patient.full_name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+      const fileName = `MSC_Report_${data.patient.name.replace(/\s/g, '_')}_${new Date().toISOString().slice(0,10)}.pdf`;
       link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
@@ -109,7 +109,7 @@ const ReportView = () => {
   const { assessment, patient } = data;
 
   return (
-    <DashboardLayout title={`Report: ${patient.full_name}`}>
+    <DashboardLayout title={`Report: ${patient.name}`}>
       <div className="max-w-5xl mx-auto flex flex-col gap-8 pb-32">
         
         {/* PAGE CONTENT: Clinical Document Style */}
@@ -119,7 +119,7 @@ const ReportView = () => {
           <div className="p-10 border-b border-slate-100 bg-slate-50/30 flex justify-between items-start">
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <h1 className="text-3xl font-light text-slate-800">{patient.full_name}</h1>
+                <h1 className="text-3xl font-light text-slate-800">{patient.name}</h1>
                 <span className="text-[10px] font-bold bg-white border border-slate-200 px-2 py-1 text-slate-400 uppercase tracking-widest">
                   {buildReferenceId(assessment.id, assessment.submitted_at)}
                 </span>

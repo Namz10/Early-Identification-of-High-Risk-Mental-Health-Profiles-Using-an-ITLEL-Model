@@ -84,14 +84,16 @@ const DashboardLayout = ({ children, title }) => {
         <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center text-xs font-medium text-slate-400 uppercase tracking-widest">
             <span>Dashboard</span>
-            {pathnames.slice(1).map((name, index) => (
-              <React.Fragment key={index}>
-                <span className="mx-2 text-slate-300">/</span>
-                <span className={index === pathnames.length - 2 ? 'text-primary' : ''}>
-                  {name.replace(/-/g, ' ')}
-                </span>
-              </React.Fragment>
-            ))}
+            {pathnames
+              .filter(name => name !== 'dashboard' && name !== 'undefined' && isNaN(Number(name)))
+              .map((name, index) => (
+                <React.Fragment key={index}>
+                  <span className="mx-2 text-slate-300">/</span>
+                  <span className={index === pathnames.length - 2 ? 'text-primary' : ''}>
+                    {name.replace(/-/g, ' ')}
+                  </span>
+                </React.Fragment>
+              ))}
           </div>
           <h2 className="text-xl font-light text-slate-800 tracking-tight">
             {title}

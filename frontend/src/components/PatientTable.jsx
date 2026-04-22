@@ -13,7 +13,11 @@ const PatientTable = ({ patients, loading }) => {
   const filteredPatients = patients.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           String(p.id).includes(searchTerm);
-    const matchesRisk = riskFilter === 'All' || p.risk_level === riskFilter;
+    
+    // Normalize risk risk_level for comparison
+    const riskLevel = p.risk_level === 'Mod Severe' ? 'Severe' : p.risk_level;
+    const matchesRisk = riskFilter === 'All' || riskLevel === riskFilter;
+    
     return matchesSearch && matchesRisk;
   });
 
@@ -68,9 +72,10 @@ const PatientTable = ({ patients, loading }) => {
             onChange={(e) => setRiskFilter(e.target.value)}
           >
             <option value="All">All Risks</option>
-            <option value="High">High Risk</option>
+            <option value="Severe">Severe Risk</option>
             <option value="Moderate">Moderate Risk</option>
-            <option value="Low">Low Risk</option>
+            <option value="Mild">Mild Risk</option>
+            <option value="Minimal">Minimal Risk</option>
           </select>
         </div>
         

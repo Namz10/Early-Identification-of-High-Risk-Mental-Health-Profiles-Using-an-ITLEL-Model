@@ -37,6 +37,7 @@ class TokenData(BaseModel):
 # Assessment Schemas
 class AssessmentSubmit(BaseModel):
     patient_name: str
+    date_of_birth: Optional[str] = None
     responses: List[int] = Field(..., min_items=9, max_items=9)
 
 class AssessmentResponse(BaseModel):

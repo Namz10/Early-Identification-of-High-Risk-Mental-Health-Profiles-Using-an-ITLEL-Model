@@ -33,8 +33,9 @@ def get_population_analytics(
     ).group_by(func.date(Assessment.submitted_at)).order_by("date").all()
     trend_over_time = [{"date": str(t.date), "score": float(t.avg_score)} for t in trends]
 
-    # 4. Most Prevalent Features (Avg SHAP for High Risk)
-    high_risk_assessments = db.query(Assessment.shap_values).filter(Assessment.risk_level == "High").all()
+    # 4. Most Prevalent Features (Avg SHAP for High/Severe Risk)
+    high_risk_levels = ["Severe", "Mod Severe", "Moderate"]
+    high_risk_assessments = db.query(Assessment.shap_values).filter(Assessment.risk_level.in_(high_risk_levels)).all()
     feature_impacts = {}
     if high_risk_assessments:
         for (shap,) in high_risk_assessments:
